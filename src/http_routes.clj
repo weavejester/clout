@@ -10,6 +10,8 @@
   "Library for parsing the Rails routes syntax."
   (:import java.net.URLDecoder))
 
+;; Regular expression utilties
+
 (defn- escape
   "Returns a string with each occurance of a character in
   chars escaped."
@@ -31,6 +33,8 @@
   [matcher]
   (for [i (range (.groupCount matcher))]
     (.group matcher (inc i))))
+
+;; Lexer functions
 
 (defn- lex-1
   "Lex one symbol from a string, and return the symbol and trailing source."
@@ -56,6 +60,8 @@
           results
           (recur results src clauses))))))
 
+;; Compile route syntax
+
 (defstruct route
   :regex
   :keywords)
@@ -69,34 +75,40 @@
 
 (defn route-compile
   "Compile a path string using the routes syntax into a uri-matcher struct."
-  [path]
-  (let [splat   #"\*"
-        word    #":([A-Za-z][\w-]*)"
-        literal #"(:[^A-Za-z*]|[^:*])+"]
-    (make-route
-      (re-pattern
-        (apply str
-          (lex path
-            splat   "(.*?)"
-            word    "([^/.,;?]+)"
-            literal #(re-escape (.group %)))))
-      (vec
-        (remove nil?
-          (lex path
-            splat   :*
-            word    #(keyword (.group % 1))
-            literal nil))))))
+  ([path]
+    (route-compile path {}))
+  ([path regexs]
+    (let [splat   #"\*"
+          word    #":([A-Za-z][\w-]*)"
+          literal #"(:[^A-Za-z*]|[^:*])+"
+          word-group #(keyword (.group % 1))
+          word-regex #(regexs (word-group %) "[^/.,;?]+")]
+      (make-route
+        (re-pattern
+          (apply str
+            (lex path
+              splat   "(.*?)"
+              word    #(str "(" (word-regex %) ")")
+              literal #(re-escape (.group %)))))
+        (vec
+          (remove nil?
+            (lex path
+              splat   :*
+              word    word-group
+              literal nil)))))))
+
+;; Parse URI with compiled route
 
 (defn- assoc-vec
   "Associate a key with a value. If the key already exists in the map, create a
   vector of values."
-  [map key val]
-  (assoc map key
-    (if-let [cur (map key)]
+  [m k v]
+  (assoc m k
+    (if-let [cur (m k)]
       (if (vector? cur)
-        (conj cur val)
-        [cur val])
-      val)))
+        (conj cur v)
+        [cur v])
+      v)))
 
 (defn- assoc-keywords-with-groups
   "Create a hash-map from a series of regex match groups and a collection of
