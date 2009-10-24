@@ -8,6 +8,7 @@
 
 (ns http-routes
   "Library for parsing the Rails routes syntax."
+  (:import java.util.Map)
   (:import java.net.URLDecoder))
 
 ;; Regular expression utilties
@@ -71,7 +72,7 @@
   [re keywords]
   (with-meta 
     (struct route re keywords)
-    {:type ::route}))
+    {:type ::compiled-route}))
 
 (defn route-compile
   "Compile a path string using the routes syntax into a uri-matcher struct."
@@ -124,18 +125,24 @@
   [string]
   (URLDecoder/decode string))
 
-(defmulti match
-  "Match a compiled route or string against a URI string. Returns the matched
-  keywords of the route.
-  e.g. (match \"/product/:id\" \"/product/10\")
+(derive ::compiled-route ::route)
+(derive String ::route)
+
+(defmulti route-matches
+  "Match a route against an object. Returns the matched keywords of the route.
+  e.g. (route-matches \"/product/:id\" \"/product/10\")
        -> {:id 10}"
-  (fn [route uri] (type route)))
+  (fn [route x] [(type route) (type x)]))
 
-(defmethod match String
+(defmethod route-matches [String String]
   [route uri]
-  (match (route-compile route) uri))
+  (route-matches (route-compile route) uri))
 
-(defmethod match ::route
+(defmethod route-matches [::route Map]
+  [route request]
+  (route-matches route (request :uri)))
+
+(defmethod route-matches [::compiled-route String]
   [route uri]
   (let [matcher (re-matcher (route :regex) (or uri "/"))]
     (if (.matches matcher)
