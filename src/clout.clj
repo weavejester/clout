@@ -6,7 +6,7 @@
 ;; terms of this license. You must not remove this notice, or any other, from
 ;; this software.
 
-(ns http-routes
+(ns clout
   "Library for parsing the Rails routes syntax."
   (:import java.util.Map)
   (:import java.net.URLDecoder))
