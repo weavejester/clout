@@ -14,6 +14,15 @@ Here is an example of use:
     user=> (route-matches "/public/*" "/public/style/screen.css")
     {:* "style/screen.css"}
 
+Clout can also match Ring requests:
+
+    user=> (route-matches "/book/:id"
+                          {:request-method :get
+                           :headers {"Host" "example.com"}
+                           :uri "/book/123"}
+                           :body nil})
+    {:id "123"}
+
 Clout supports both keywords and wildcards. Keywords (like ":title") will
 match any character but the following: `/ . , ; ?`. Wildcards will match
 anything.
@@ -23,7 +32,7 @@ If a route does not match, nil is returned:
     user=> (route-matches "/products" "/articles")
     nil
 
-For additional performance you can choose to pre-compile routes:
+For additional performance, you can choose to pre-compile a route:
 
     user=> (def user-route (route-compile "/user/:id"))
     #'user/user-route
