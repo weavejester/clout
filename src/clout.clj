@@ -64,15 +64,21 @@
 ;; Compile route syntax
 
 (defstruct route
+  :absolute?
   :regex
   :keywords)
 
 (defn- make-route
   "Construct a route structure."
-  [re keywords]
+  [absolute? re keywords]
   (with-meta 
-    (struct route re keywords)
+    (struct route absolute? re keywords)
     {:type ::compiled-route}))
+
+(defn- absolute-url?
+  "True if the path contains an absolute URL."
+  [path]
+  (boolean (re-matches #"https?://.*" path)))
 
 (defn route-compile
   "Compile a path string using the routes syntax into a uri-matcher struct."
@@ -85,6 +91,7 @@
           word-group #(keyword (.group % 1))
           word-regex #(regexs (word-group %) "[^/.,;?]+")]
       (make-route
+        (absolute-url? path)
         (re-pattern
           (apply str
             (lex path
@@ -125,8 +132,17 @@
   [string]
   (URLDecoder/decode string))
 
-(derive ::compiled-route ::route)
-(derive String ::route)
+(defn request-url
+  "Return the complete URL for the request."
+  [request]
+  (str
+    (name (:scheme request))
+    "://"
+    (get-in request [:headers "host"])
+    (:uri request)))
+
+(derive Map ::request)
+(derive String ::request)
 
 (defmulti route-matches
   "Match a route against an object. Returns the matched keywords of the route.
@@ -134,13 +150,15 @@
        -> {:id 10}"
   (fn [route x] [(type route) (type x)]))
 
-(defmethod route-matches [String String]
-  [route uri]
-  (route-matches (route-compile route) uri))
-
-(defmethod route-matches [::route Map]
+(defmethod route-matches [String ::request]
   [route request]
-  (route-matches route (request :uri)))
+  (route-matches (route-compile route) request))
+
+(defmethod route-matches [::compiled-route Map]
+  [route request]
+  (route-matches route (if (:absolute? route)
+                         (request-url request)
+                         (:uri request))))
 
 (defmethod route-matches [::compiled-route String]
   [route uri]
