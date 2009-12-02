@@ -144,11 +144,18 @@
 (derive Map ::request)
 (derive String ::request)
 
+(derive String ::route)
+(derive ::compiled-route ::route)
+
 (defmulti route-matches
   "Match a route against an object. Returns the matched keywords of the route.
   e.g. (route-matches \"/product/:id\" \"/product/10\")
        -> {:id 10}"
   (fn [route x] [(type route) (type x)]))
+
+(defmethod route-matches [::route nil]
+  [route _]
+  (route-matches route "/"))
 
 (defmethod route-matches [String ::request]
   [route request]
