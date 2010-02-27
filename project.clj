@@ -1,4 +1,4 @@
-(defproject clout "0.1"
+(defproject clout "0.2.0-SNAPSHOT"
   :description "A HTTP route matching library"
   :url "http://github.com/weavejester/clout"
   :dependencies [[org.clojure/clojure "1.1.0"]]
