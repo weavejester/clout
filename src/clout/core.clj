@@ -66,13 +66,13 @@
 (defstruct route
   :absolute?
   :regex
-  :keywords)
+  :keys)
 
 (defn- make-route
   "Construct a route structure."
-  [absolute? re keywords]
+  [absolute? re keys]
   (with-meta 
-    (struct route absolute? re keywords)
+    (struct route absolute? re keys)
     {:type ::compiled-route}))
 
 (defn- absolute-url?
@@ -88,7 +88,7 @@
     (let [splat   #"\*"
           word    #":([A-Za-z][\w-]*)"
           literal #"(:[^A-Za-z*]|[^:*])+"
-          word-group #(keyword (.group % 1))
+          word-group #(.group % 1)
           word-regex #(regexs (word-group %) "[^/.,;?]+")]
       (make-route
         (absolute-url? path)
@@ -101,7 +101,7 @@
         (vec
           (remove nil?
             (lex path
-              splat   :*
+              splat   "*"
               word    word-group
               literal nil)))))))
 
@@ -118,14 +118,14 @@
         [cur v])
       v)))
 
-(defn- assoc-keywords-with-groups
+(defn- assoc-keys-with-groups
   "Create a hash-map from a series of regex match groups and a collection of
   keywords."
-  [groups keywords]
+  [groups keys]
   (reduce
     (fn [m [k v]] (assoc-vec m k v))
     {}
-    (map vector keywords groups)))
+    (map vector keys groups)))
 
 (defn- urldecode
   "Encode a urlencoded string using the default encoding."
@@ -171,6 +171,6 @@
   [route uri]
   (let [matcher (re-matcher (route :regex) (or uri "/"))]
     (if (.matches matcher)
-      (assoc-keywords-with-groups
+      (assoc-keys-with-groups
         (map urldecode (re-groups* matcher))
-        (route :keywords)))))
+        (route :keys)))))
