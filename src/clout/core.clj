@@ -89,7 +89,8 @@
           word    #":([A-Za-z][\w-]*)"
           literal #"(:[^A-Za-z*]|[^:*])+"
           word-group #(.group % 1)
-          word-regex #(regexs (word-group %) "[^/.,;?]+")]
+          word-regex #(regexs (keyword (word-group %))
+                              "[^/.,;?]+")]
       (make-route
         (absolute-url? path)
         (re-pattern

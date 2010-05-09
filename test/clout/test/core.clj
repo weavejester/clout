@@ -60,3 +60,9 @@
 
 (deftest unmatched-paths
   (is (nil? (route-matches "/foo" "/bar"))))
+
+(deftest custom-matches
+  (let [route (route-compile "/foo/:bar" {:bar #"\d+"})]
+    (is (not (route-matches route "/foo/bar")))
+    (is (not (route-matches route "/foo/1x")))
+    (is (route-matches route "/foo/10"))))
