@@ -1,4 +1,4 @@
-(ns clout.core-test
+(ns clout.test.core
   (:use clojure.test
         clout.core))
 
