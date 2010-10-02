@@ -86,8 +86,8 @@
     (route-compile path {}))
   ([path regexs]
     (let [splat   #"\*"
-          word    #":([A-Za-z][\w-]*)"
-          literal #"(:[^A-Za-z*]|[^:*])+"
+          word    #":([A-Za-z_][\w-]*)"
+          literal #"(:[^A-Za-z_*]|[^:*])+"
           word-group #(.group % 1)
           word-regex #(regexs (keyword (word-group %))
                               "[^/.,;?]+")]

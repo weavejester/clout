@@ -29,6 +29,11 @@
     "/:foo-bar" "/baz" {"foo-bar" "baz"}
     "/:foo-"    "/baz" {"foo-" "baz"}))
 
+(deftest underscore-keywords
+  (are [path uri params] (= (route-matches path uri) params)
+    "/:foo_bar" "/baz" {"foo_bar" "baz"}
+    "/:_foo"    "/baz" {"_foo" "baz"}))
+
 (deftest urlencoded-keywords
   (are [path uri params] (= (route-matches path uri) params)
     "/:x" "/foo%20bar" {"x" "foo bar"}
