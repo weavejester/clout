@@ -44,6 +44,15 @@
     "/:x/:x/:x" "/a/b/c" {"x" ["a" "b" "c"]}
     "/:x/b/:x"  "/a/b/c" {"x" ["a" "c"]}))
 
+(deftest non-ascii-keywords
+  (are [path uri params] (= (route-matches path uri) params)
+    "/:äñßOÔ"   "/abc"     {"äñßOÔ" "abc"}
+    "/:ÁäñßOÔ"  "/abc"     {"ÁäñßOÔ" "abc"}
+    "/:ä/:ش"    "/foo/bar" {"ä" "foo" "ش" "bar"}
+    "/:ä/:ä"    "/foo/bar" {"ä" ["foo" "bar"]}
+    "/:Ä-ü"     "/baz"     {"Ä-ü" "baz"}
+    "/:Ä_ü"     "/baz"     {"Ä_ü" "baz"}))
+
 (deftest wildcard-paths
   (are [path uri params] (= (route-matches path uri) params)
     "/*"     "/foo"         {"*" "foo"}
