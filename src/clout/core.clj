@@ -8,25 +8,21 @@
 
 (ns clout.core
   "Library for parsing the Rails routes syntax."
+  (:require [clojure.string :as string])
   (:import java.util.Map
            java.net.URLDecoder))
 
 ;; Regular expression utilties
 
-(defn- escape
-  "Returns a string with each occurance of a character in
-  chars escaped."
-  [chars #^String string]
-  (let [charset (set chars)]
-    (apply str
-      (mapcat
-        #(if (contains? charset %) [\\ %] [%])
-        string))))
+(def ^{:private true} re-chars
+  (set "\\.*+|?()[]{}$^"))
 
 (defn- re-escape
-  "Escape all special regex chars in string."
-  [string]
-  (escape "\\.*+|?()[]{}$^" string))
+  "Escape all special regex chars in a string."
+  [s]
+  (string/escape
+    s
+    #(if (re-chars %) (str \\ %))))
 
 (defn re-groups*
   "More consistant re-groups that always returns a vector of groups, even if
@@ -61,52 +57,21 @@
           results
           (recur results src clauses))))))
 
-;; Compile route syntax
+;; Route matching
 
-(defstruct route
-  :absolute?
-  :regex
-  :keys)
+(defn- urldecode
+  "Encode a urlencoded string using the default encoding."
+  [string]
+  (URLDecoder/decode string))
 
-(defn- make-route
-  "Construct a route structure."
-  [absolute? re keys]
-  (with-meta 
-    (struct route absolute? re keys)
-    {:type ::compiled-route}))
-
-(defn- absolute-url?
-  "True if the path contains an absolute URL."
-  [path]
-  (boolean (re-matches #"https?://.*" path)))
-
-(defn route-compile
-  "Compile a path string using the routes syntax into a uri-matcher struct."
-  ([path]
-    (route-compile path {}))
-  ([path regexs]
-    (let [splat   #"\*"
-          word    #":([\p{L}_][\p{L}_0-9-]*)"
-          literal #"(:[^\p{L}_*]|[^:*])+"
-          word-group #(.group % 1)
-          word-regex #(regexs (keyword (word-group %))
-                              "[^/.,;?]+")]
-      (make-route
-        (absolute-url? path)
-        (re-pattern
-          (apply str
-            (lex path
-              splat   "(.*?)"
-              word    #(str "(" (word-regex %) ")")
-              literal #(re-escape (.group %)))))
-        (vec
-          (remove nil?
-            (lex path
-              splat   "*"
-              word    word-group
-              literal nil)))))))
-
-;; Parse URI with compiled route
+(defn request-url
+  "Return the complete URL for the request."
+  [request]
+  (str
+    (name (:scheme request))
+    "://"
+    (get-in request [:headers "host"])
+    (:uri request)))
 
 (defn- assoc-vec
   "Associate a key with a value. If the key already exists in the map, create a
@@ -128,50 +93,73 @@
     {}
     (map vector keys groups)))
 
-(defn- urldecode
-  "Encode a urlencoded string using the default encoding."
-  [string]
-  (URLDecoder/decode string))
+(defprotocol Request
+  (uri [request absolute?]
+    "Return the URI of the request. If absolute? is true, the URI returned
+    will be an absolte URL."))
 
-(defn request-url
-  "Return the complete URL for the request."
-  [request]
-  (str
-    (name (:scheme request))
-    "://"
-    (get-in request [:headers "host"])
-    (:uri request)))
+(extend-protocol Request
+  nil
+  (uri [_ _] (uri "/" false))
+  String
+  (uri [path _] path)
+  Map
+  (uri [request absolute?]
+    (if absolute?
+      (request-url request)
+      (:uri request))))
 
-(derive Map ::request)
-(derive String ::request)
+(defprotocol Route
+  (route-matches [route request]
+    "If the route matches the supplied request, the matched keywords are
+    returned as a map. Otherwise, nil is returned.
+    e.g. (route-matches \"/product/:id\" \"/product/10\")
+       -> {:id 10}"))
 
-(derive String ::route)
-(derive ::compiled-route ::route)
+(declare route-compile)
 
-(defmulti route-matches
-  "Match a route against an object. Returns the matched keywords of the route.
-  e.g. (route-matches \"/product/:id\" \"/product/10\")
-       -> {:id 10}"
-  (fn [route x] [(type route) (type x)]))
+(extend-type String
+  Route
+  (route-matches [route request]
+    (route-matches (route-compile route) request)))
 
-(defmethod route-matches [::route nil]
-  [route _]
-  (route-matches route "/"))
+(defrecord CompiledRoute [re keys absolute?]
+  Route
+  (route-matches [route request]
+    (let [matcher (re-matcher re (uri request absolute?))]
+      (if (.matches matcher)
+        (assoc-keys-with-groups
+          (map urldecode (re-groups* matcher))
+          keys)))))
 
-(defmethod route-matches [String ::request]
-  [route request]
-  (route-matches (route-compile route) request))
+;; Compile routes
 
-(defmethod route-matches [::compiled-route Map]
-  [route request]
-  (route-matches route (if (:absolute? route)
-                         (request-url request)
-                         (:uri request))))
+(defn- absolute-url?
+  "True if the path contains an absolute URL."
+  [path]
+  (boolean (re-matches #"https?://.*" path)))
 
-(defmethod route-matches [::compiled-route String]
-  [route uri]
-  (let [matcher (re-matcher (route :regex) (or uri "/"))]
-    (if (.matches matcher)
-      (assoc-keys-with-groups
-        (map urldecode (re-groups* matcher))
-        (route :keys)))))
+(defn route-compile
+  "Compile a path string using the routes syntax into a uri-matcher struct."
+  ([path]
+    (route-compile path {}))
+  ([path regexs]
+    (let [splat   #"\*"
+          word    #":([\p{L}_][\p{L}_0-9-]*)"
+          literal #"(:[^\p{L}_*]|[^:*])+"
+          word-group #(.group % 1)
+          word-regex #(regexs (keyword (word-group %))
+                              "[^/.,;?]+")]
+      (CompiledRoute.
+        (re-pattern
+          (apply str
+            (lex path
+              splat   "(.*?)"
+              word    #(str "(" (word-regex %) ")")
+              literal #(re-escape (.group %)))))
+        (remove nil?
+          (lex path
+            splat   "*"
+            word    word-group
+            literal nil))
+        (absolute-url? path)))))
