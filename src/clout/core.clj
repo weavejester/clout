@@ -23,7 +23,72 @@
   (for [i (range (.groupCount matcher))]
     (.group matcher (inc i))))
 
-;; Lexer functions
+;; Route matching
+
+(defn- urldecode
+  "Encode a urlencoded string using the default encoding."
+  [string]
+  (URLDecoder/decode string))
+
+(defn- assoc-vec
+  "Associate a key with a value. If the key already exists in the map, create a
+  vector of values."
+  [m k v]
+  (assoc m k
+    (if-let [cur (m k)]
+      (if (vector? cur)
+        (conj cur v)
+        [cur v])
+      v)))
+
+(defn- assoc-keys-with-groups
+  "Create a hash-map from a series of regex match groups and a collection of
+  keywords."
+  [groups keys]
+  (reduce
+    (fn [m [k v]] (assoc-vec m k v))
+    {}
+    (map vector keys groups)))
+
+(defn- request-url
+  "Return the complete URL for the request."
+  [request]
+  (str (name (:scheme request))
+       "://"
+       (get-in request [:headers "host"])
+       (:uri request)))
+
+(defn- path-info
+  "Return the path info for the request."
+  [request]
+  (or (:path-info request)
+      (:uri request)))
+
+(defprotocol Route
+  (route-matches [route request]
+    "If the route matches the supplied request, the matched keywords are
+    returned as a map. Otherwise, nil is returned."))
+
+(declare route-compile)
+
+(extend-type String
+  Route
+  (route-matches [route request]
+    (route-matches (route-compile route) request)))
+
+(defrecord CompiledRoute [re keys absolute?]
+  Route
+  (route-matches [route request]
+    (let [path-info (if absolute?
+                      (request-url request)
+                      (path-info request))
+          matcher   (re-matcher re path-info)]
+      (if (.matches matcher)
+        (assoc-keys-with-groups
+          (map urldecode (re-groups* matcher))
+          keys)))))
+
+;; Compile routes
 
 (defn- lex-1
   "Lex one symbol from a string, and return the symbol and trailing source."
@@ -48,83 +113,6 @@
         (if (= src "")
           results
           (recur results src clauses))))))
-
-;; Route matching
-
-(defn- urldecode
-  "Encode a urlencoded string using the default encoding."
-  [string]
-  (URLDecoder/decode string))
-
-(defn request-url
-  "Return the complete URL for the request."
-  [request]
-  (str
-    (name (:scheme request))
-    "://"
-    (get-in request [:headers "host"])
-    (:uri request)))
-
-(defn- assoc-vec
-  "Associate a key with a value. If the key already exists in the map, create a
-  vector of values."
-  [m k v]
-  (assoc m k
-    (if-let [cur (m k)]
-      (if (vector? cur)
-        (conj cur v)
-        [cur v])
-      v)))
-
-(defn- assoc-keys-with-groups
-  "Create a hash-map from a series of regex match groups and a collection of
-  keywords."
-  [groups keys]
-  (reduce
-    (fn [m [k v]] (assoc-vec m k v))
-    {}
-    (map vector keys groups)))
-
-(defprotocol Request
-  (uri [request absolute?]
-    "Return the URI of the request. If absolute? is true, the URI returned
-    will be an absolte URL."))
-
-(extend-protocol Request
-  nil
-  (uri [_ _] (uri "/" false))
-  String
-  (uri [path _] path)
-  Map
-  (uri [request absolute?]
-    (if absolute?
-      (request-url request)
-      (:uri request))))
-
-(defprotocol Route
-  (route-matches [route request]
-    "If the route matches the supplied request, the matched keywords are
-    returned as a map. Otherwise, nil is returned.
-    e.g. (route-matches \"/product/:id\" \"/product/10\")
-       -> {:id 10}"))
-
-(declare route-compile)
-
-(extend-type String
-  Route
-  (route-matches [route request]
-    (route-matches (route-compile route) request)))
-
-(defrecord CompiledRoute [re keys absolute?]
-  Route
-  (route-matches [route request]
-    (let [matcher (re-matcher re (uri request absolute?))]
-      (if (.matches matcher)
-        (assoc-keys-with-groups
-          (map urldecode (re-groups* matcher))
-          keys)))))
-
-;; Compile routes
 
 (defn- absolute-url?
   "True if the path contains an absolute URL."
