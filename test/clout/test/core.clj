@@ -72,8 +72,7 @@
          :uri     "/"})))
 
 (deftest url-port-paths
-  (let [req (-> (request :get "http://localhost:8080/")
-                (header :host "localhost:8080"))]
+  (let [req (request :get "http://localhost:8080/")]
     (is (route-matches "http://localhost:8080/" req))
     (is (not (route-matches "http://localhost:7070/" req)))))
 
