@@ -69,13 +69,6 @@
     "If the route matches the supplied request, the matched keywords are
     returned as a map. Otherwise, nil is returned."))
 
-(declare route-compile)
-
-(extend-type String
-  Route
-  (route-matches [route request]
-    (route-matches (route-compile route) request)))
-
 (defrecord CompiledRoute [re keys absolute?]
   Route
   (route-matches [route request]
@@ -142,3 +135,8 @@
             word    word-group
             literal nil))
         (absolute-url? path)))))
+
+(extend-type String
+  Route
+  (route-matches [route request]
+    (route-matches (route-compile route) request)))
