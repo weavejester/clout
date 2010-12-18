@@ -1,48 +1,49 @@
 (ns clout.test.core
   (:use clojure.test
+        ring.mock.request
         clout.core))
 
 (deftest fixed-path
-  (are [path] (route-matches path {:uri path})
+  (are [path] (route-matches path (request :get path))
     "/"
     "/foo"
     "/foo/bar"
     "/foo/bar.html"))
 
 (deftest keyword-paths
-  (are [path uri params] (= (route-matches path {:uri uri}) params)
+  (are [path uri params] (= (route-matches path (request :get uri)) params)
     "/:x"       "/foo"     {:x "foo"}
     "/foo/:x"   "/foo/bar" {:x "bar"}
     "/a/b/:c"   "/a/b/c"   {:c "c"}
     "/:a/b/:c"  "/a/b/c"   {:a "a", :c "c"}))
 
 (deftest keywords-match-extensions
-  (are [path uri params] (= (route-matches path {:uri uri}) params)
+  (are [path uri params] (= (route-matches path (request :get uri)) params)
     "/foo.:ext" "/foo.txt" {:ext "txt"}
     "/:x.:y"    "/foo.txt" {:x "foo", :y "txt"}))
 
 (deftest hyphen-keywords
-  (are [path uri params] (= (route-matches path {:uri uri}) params)
+  (are [path uri params] (= (route-matches path (request :get uri)) params)
     "/:foo-bar" "/baz" {:foo-bar "baz"}
     "/:foo-"    "/baz" {:foo- "baz"}))
 
 (deftest underscore-keywords
-  (are [path uri params] (= (route-matches path {:uri uri}) params)
+  (are [path uri params] (= (route-matches path (request :get uri)) params)
     "/:foo_bar" "/baz" {:foo_bar "baz"}
     "/:_foo"    "/baz" {:_foo "baz"}))
 
 (deftest urlencoded-keywords
-  (are [path uri params] (= (route-matches path {:uri uri}) params)
+  (are [path uri params] (= (route-matches path (request :get uri)) params)
     "/:x" "/foo%20bar" {:x "foo bar"}
     "/:x" "/foo+bar"   {:x "foo bar"}))
 
 (deftest same-keyword-many-times
-  (are [path uri params] (= (route-matches path {:uri uri}) params)
+  (are [path uri params] (= (route-matches path (request :get uri)) params)
     "/:x/:x/:x" "/a/b/c" {:x ["a" "b" "c"]}
     "/:x/b/:x"  "/a/b/c" {:x ["a" "c"]}))
 
 (deftest non-ascii-keywords
-  (are [path uri params] (= (route-matches path {:uri uri}) params)
+  (are [path uri params] (= (route-matches path (request :get uri)) params)
     "/:äñßOÔ"   "/abc"     {:äñßOÔ "abc"}
     "/:ÁäñßOÔ"  "/abc"     {:ÁäñßOÔ "abc"}
     "/:ä/:ش"    "/foo/bar" {:ä "foo" :ش "bar"}
@@ -51,7 +52,7 @@
     "/:Ä_ü"     "/baz"     {:Ä_ü "baz"}))
 
 (deftest wildcard-paths
-  (are [path uri params] (= (route-matches path {:uri uri}) params)
+  (are [path uri params] (= (route-matches path (request :get uri)) params)
     "/*"     "/foo"         {:* "foo"}
     "/*"     "/foo.txt"     {:* "foo.txt"}
     "/*"     "/foo/bar"     {:* "foo/bar"}
@@ -59,7 +60,8 @@
     "/a/*/d" "/a/b/c/d"     {:* "b/c"}))
 
 (deftest compiled-routes
-  (is (= (route-matches (route-compile "/foo/:id") {:uri "/foo/bar"})
+  (is (= (route-matches (route-compile "/foo/:id")
+                        (request :get "/foo/bar"))
          {:id "bar"})))
 
 (deftest url-paths
@@ -70,20 +72,20 @@
          :uri     "/"})))
 
 (deftest url-port-paths
-  (let [request {:scheme  :http
-                 :headers {"host" "localhost:8080"}
-                 :uri     "/"}]
-    (is (route-matches "http://localhost:8080/" request))
-    (is (not (route-matches "http://localhost:7070/" request)))))
+  (let [req (-> (request :get "http://localhost:8080/")
+                (header :host "localhost:8080"))]
+    (is (route-matches "http://localhost:8080/" req))
+    (is (not (route-matches "http://localhost:7070/" req)))))
 
 (deftest unmatched-paths
-  (is (nil? (route-matches "/foo" {:uri "/bar"}))))
+  (is (nil? (route-matches "/foo" (request :get "/bar")))))
 
 (deftest path-info-matches
-  (is (route-matches "/bar" {:uri "/foo", :path-info "/bar"})))
+  (is (route-matches "/bar" (-> (request :get "/foo/bar")
+                                (assoc :path-info "/bar")))))
 
 (deftest custom-matches
   (let [route (route-compile "/foo/:bar" {:bar #"\d+"})]
-    (is (not (route-matches route {:uri "/foo/bar"})))
-    (is (not (route-matches route {:uri "/foo/1x"})))
-    (is (route-matches route {:uri "/foo/10"}))))
+    (is (not (route-matches route (request :get "/foo/bar"))))
+    (is (not (route-matches route (request :get "/foo/1x"))))
+    (is (route-matches route (request :get "/foo/10")))))
