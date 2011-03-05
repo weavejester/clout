@@ -5,6 +5,13 @@ Clout is a library for matching [Ring][1] HTTP requests. It uses the same
 routing syntax as used by popular Ruby web frameworks like Ruby on Rails and
 Sinatra.
 
+Installation
+------------
+
+Add the following to your project.clj dependencies:
+
+    [clout "0.4.1"]
+
 Usage
 -----
 
