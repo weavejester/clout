@@ -28,7 +28,7 @@
 (defn- urldecode
   "Encode a urlencoded string using the default encoding."
   [string]
-  (URLDecoder/decode string))
+  (URLDecoder/decode string "UTF-8"))
 
 (defn- assoc-vec
   "Associate a key with a value. If the key already exists in the map, create a

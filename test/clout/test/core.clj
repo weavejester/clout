@@ -51,6 +51,10 @@
     "/:Ä-ü"     "/baz"     {:Ä-ü "baz"}
     "/:Ä_ü"     "/baz"     {:Ä_ü "baz"}))
 
+(deftest utf8-routes
+  (is (= (route-matches "/:x" (request :get "/gro%C3%9Fp%C3%B6sna"))
+         {:x "großpösna"})))
+
 (deftest wildcard-paths
   (are [path uri params] (= (route-matches path (request :get uri)) params)
     "/*"     "/foo"         {:* "foo"}
