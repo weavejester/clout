@@ -121,7 +121,7 @@
           word    #":([\p{L}_][\p{L}_0-9-]*)"
           literal #"(:[^\p{L}_*]|[^:*])+"
           word-group #(keyword (.group % 1))
-          word-regex #(regexs (word-group %) "[^/.,;?]+")]
+          word-regex #(regexs (word-group %) "[^/,;?]+")]
       (CompiledRoute.
         (re-pattern
           (apply str
@@ -140,3 +140,4 @@
   Route
   (route-matches [route request]
     (route-matches (route-compile route) request)))
+
