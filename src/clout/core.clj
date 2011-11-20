@@ -25,10 +25,15 @@
 
 ;; Route matching
 
-(defn- urldecode
-  "Encode a urlencoded string using the default encoding."
-  [string]
-  (URLDecoder/decode string "UTF-8"))
+(defn path-decode
+  "Decode a path segment in a URI. Defaults to using UTF-8 encoding."
+  ([path]
+     (path-decode path "UTF-8"))
+  ([path encoding]
+     (string/replace
+      path
+      #"(?:%[0-9A-Fa-f]{2})+"
+      #(URLDecoder/decode % encoding))))
 
 (defn- assoc-vec
   "Associate a key with a value. If the key already exists in the map, create a
@@ -78,7 +83,7 @@
           matcher   (re-matcher re path-info)]
       (if (.matches matcher)
         (assoc-keys-with-groups
-          (map urldecode (re-groups* matcher))
+          (map path-decode (re-groups* matcher))
           keys)))))
 
 ;; Compile routes
