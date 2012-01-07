@@ -35,7 +35,8 @@
 (deftest urlencoded-keywords
   (are [path uri params] (= (route-matches path (request :get uri)) params)
     "/:x" "/foo%20bar" {:x "foo bar"}
-    "/:x" "/foo+bar"   {:x "foo+bar"}))
+    "/:x" "/foo+bar"   {:x "foo+bar"}
+    "/:x" "/foo%5Cbar" {:x "foo\\bar"}))
 
 (deftest same-keyword-many-times
   (are [path uri params] (= (route-matches path (request :get uri)) params)

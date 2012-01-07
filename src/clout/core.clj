@@ -2,7 +2,7 @@
   "Library for parsing the Rails routes syntax."
   (:require [clojure.string :as string])
   (:import java.util.Map
-           java.net.URLDecoder))
+           [java.net URLDecoder URLEncoder]))
 
 ;; Regular expression utilties
 
@@ -30,10 +30,8 @@
   ([path]
      (path-decode path "UTF-8"))
   ([path encoding]
-     (string/replace
-      path
-      #"(?:%[0-9A-Fa-f]{2})+"
-      #(URLDecoder/decode % encoding))))
+     (-> (string/replace path "+" (URLEncoder/encode "+" encoding))
+         (URLDecoder/decode encoding))))
 
 (defn- assoc-vec
   "Associate a key with a value. If the key already exists in the map, create a
