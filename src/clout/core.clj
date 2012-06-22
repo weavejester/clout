@@ -2,6 +2,7 @@
   "Library for parsing the Rails routes syntax."
   (:require [clojure.string :as string])
   (:import java.util.Map
+           java.util.regex.Matcher
            [java.net URLDecoder URLEncoder]))
 
 ;; Regular expression utilties
@@ -19,9 +20,9 @@
 (defn re-groups*
   "More consistant re-groups that always returns a vector of groups, even if
   there is only one group."
-  [matcher]
+  [^Matcher matcher]
   (for [i (range (.groupCount matcher))]
-    (.group matcher (inc i))))
+    (.group matcher (int (inc i)))))
 
 ;; Route matching
 
@@ -94,7 +95,7 @@
       (let [matcher (re-matcher re src)]
         (if (.lookingAt matcher)
           [(if (fn? action) (action matcher) action)
-           (.substring src (.end matcher))])))
+           (subs src (.end matcher))])))
     (partition 2 clauses)))
 
 (defn- lex
@@ -123,7 +124,7 @@
     (let [splat   #"\*"
           word    #":([\p{L}_][\p{L}_0-9-]*)"
           literal #"(:[^\p{L}_*]|[^:*])+"
-          word-group #(keyword (.group % 1))
+          word-group #(keyword (.group ^Matcher % 1))
           word-regex #(regexs (word-group %) "[^/,;?]+")]
       (CompiledRoute.
         (re-pattern
@@ -131,7 +132,7 @@
             (lex path
               splat   "(.*?)"
               word    #(str "(" (word-regex %) ")")
-              literal #(re-escape (.group %)))))
+              literal #(re-escape (.group ^Matcher %)))))
         (remove nil?
           (lex path
             splat   :*
