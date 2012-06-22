@@ -68,5 +68,5 @@ for different keywords. This allows more specific routing:
     user=> (route-matches user-route (request :get "/user/jsmith"))
     nil
 
-[1]: https://github.com/mmcgrana/ring
+[1]: https://github.com/ring-clojure/ring
 [2]: https://github.com/weavejester/ring-mock
