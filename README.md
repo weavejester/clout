@@ -10,7 +10,7 @@ Installation
 
 Add the following to your project.clj dependencies:
 
-    [clout "1.0.1"]
+    [clout "1.1.0"]
 
 Usage
 -----
