@@ -112,9 +112,9 @@
           (recur results src clauses))))))
 
 (defn- absolute-url?
-  "True if the path contains an absolute URL."
+  "True if the path contains an absolute or scheme-relative URL."
   [path]
-  (boolean (re-matches #"https?://.*" path)))
+  (boolean (re-matches #"(https?:)?//.*" path)))
 
 (defn route-compile
   "Compile a path string using the routes syntax into a uri-matcher struct."
@@ -131,6 +131,7 @@
           (apply str
             (lex path
               splat   "(.*?)"
+              #"^//"  "https?://"
               word    #(str "(" (word-regex %) ")")
               literal #(re-escape (.group ^Matcher %)))))
         (remove nil?

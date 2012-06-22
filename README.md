@@ -33,6 +33,15 @@ Clout can also match absolute routes:
                           (request :get "http://subdomain.example.com/"))
     {}
 
+And scheme-relative routes:
+
+    user=> (route-matches "//subdomain.example.com/"
+                          (request :get "http://subdomain.example.com/"))
+    {}
+    user=> (route-matches "//subdomain.example.com/"
+                          (request :get "https://subdomain.example.com/"))
+    {}
+
 Clout supports both keywords and wildcards. Keywords (like ":title") will
 match any character but the following: `/ . , ; ?`. Wildcards (*) will match
 anything.
