@@ -74,7 +74,17 @@
         "http://localhost/"
         {:scheme  :http
          :headers {"host" "localhost"}
-         :uri     "/"})))
+         :uri     "/"}))
+  (is (route-matches
+       "//localhost/"
+       {:scheme  :http
+        :headers {"host" "localhost"}
+        :uri     "/"}))
+  (is (route-matches
+       "//localhost/"
+       {:scheme  :https
+        :headers {"host" "localhost"}
+        :uri     "/"})))
 
 (deftest url-port-paths
   (let [req (request :get "http://localhost:8080/")]
