@@ -56,7 +56,7 @@ anything.
 If a route does not match, nil is returned:
 
 ```clj
-user=> (route-matches "/products" "/articles")
+user=> (route-matches "/products" (request :get "/articles"))
 nil
 ```
 
