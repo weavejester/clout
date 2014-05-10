@@ -1,5 +1,9 @@
-classes
-lib
-clout*.jar
+/target
+/classes
+/checkouts
 pom.xml
-.lein-failures
+pom.xml.asc
+*.jar
+*.class
+/.lein-*
+/.nrepl-port
