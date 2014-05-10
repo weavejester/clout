@@ -3,4 +3,4 @@
   :url "http://github.com/weavejester/clout"
   :dependencies [[org.clojure/clojure "1.2.1"]]
   :profiles
-  {:dev {:dependencies [[ring-mock "0.1.1"]]}})
+  {:dev {:dependencies [[ring-mock "0.1.5"]]}})
