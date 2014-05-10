@@ -1,6 +1,8 @@
 (defproject clout "1.1.0"
   :description "A HTTP route matching library"
-  :url "http://github.com/weavejester/clout"
+  :url "https://github.com/weavejester/clout"
+  :license {:name "Eclipse Public License"
+            :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.3.0"]]
   :profiles
   {:dev {:jvm-opts ^:replace []
