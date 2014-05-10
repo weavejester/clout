@@ -1,5 +1,7 @@
 # Clout
 
+[![Build Status](https://travis-ci.org/weavejester/clout.svg?branch=master)](https://travis-ci.org/weavejester/clout)
+
 Clout is a library for matching [Ring][1] HTTP requests. It uses the same
 routing syntax as used by popular Ruby web frameworks like Ruby on Rails and
 Sinatra.
