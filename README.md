@@ -1,12 +1,12 @@
-Clout
-=====
+# Clout
 
 Clout is a library for matching [Ring][1] HTTP requests. It uses the same
 routing syntax as used by popular Ruby web frameworks like Ruby on Rails and
 Sinatra.
 
-Installation
-------------
+[1]: https://github.com/ring-clojure/ring
+
+## Installation
 
 Add the following to your project.clj dependencies:
 
@@ -14,11 +14,12 @@ Add the following to your project.clj dependencies:
 [clout "1.1.0"]
 ```
 
-Usage
------
+## Usage
 
 These following examples make use of the [ring-mock][2] library to
 generate Ring request maps.
+
+[2]: https://github.com/weavejester/ring-mock
 
 ```clj
 user=> (use 'ring.mock.request 'clout.core)
@@ -81,5 +82,9 @@ user=> (route-matches user-route (request :get "/user/jsmith"))
 nil
 ```
 
-[1]: https://github.com/ring-clojure/ring
-[2]: https://github.com/weavejester/ring-mock
+## License
+
+Copyright © 2014 James Reeves
+
+Distributed under the Eclipse Public License either version 1.0 or (at
+your option) any later version.
