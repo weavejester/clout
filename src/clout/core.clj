@@ -34,6 +34,26 @@
      (-> (string/replace path "+" (URLEncoder/encode "+" encoding))
          (URLDecoder/decode encoding))))
 
+(def ^{:private true} uri-chars
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._~:@!$&'()*+,;=/")
+
+(defmacro ^{:private true} encode-char [char encoding]
+  `(case ~char
+     ~@(mapcat (fn [c] [c (str c)]) uri-chars)
+     \space "%20"
+     (URLEncoder/encode (Character/toString ~char) ~encoding)))
+
+(defn path-encode
+  "Encode a path to make it suitable to be placed in a URI. Default to using
+  UTF-8 encoding."
+  ([path]
+     (path-encode path "UTF-8"))
+  ([path encoding]
+     (let [sb (StringBuilder.)]
+       (doseq [c path]
+         (.append sb ^String (encode-char c encoding)))
+       (.toString sb))))
+
 (defn- assoc-vec
   "Associate a key with a value. If the key already exists in the map, create a
   vector of values."

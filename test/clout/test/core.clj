@@ -3,6 +3,22 @@
         ring.mock.request
         clout.core))
 
+(deftest test-path-decode
+  (are [a b] (= (path-decode a) b)
+    "abc"   "abc"
+    "a%20c" "a c"
+    "a+c"   "a+c"
+    "a/c"   "a/c"
+    "a%5Cc" "a\\c"))
+
+(deftest test-path-encode
+  (are [a b] (= (path-encode a) b)
+    "abc"  "abc"
+    "a c"  "a%20c"
+    "a+c"  "a+c"
+    "a/c"  "a/c"
+    "a\\c" "a%5Cc"))
+
 (deftest fixed-path
   (are [path] (route-matches path (request :get path))
     "/"
