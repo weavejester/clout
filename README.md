@@ -13,7 +13,7 @@ Sinatra.
 Add the following to your project.clj dependencies:
 
 ```clj
-[clout "1.1.0"]
+[clout "1.2.0"]
 ```
 
 ## Usage
