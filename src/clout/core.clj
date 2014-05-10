@@ -7,8 +7,7 @@
 
 ;; Regular expression utilties
 
-(def ^{:private true} re-chars
-  (set "\\.*+|?()[]{}$^"))
+(def ^:private re-chars (set "\\.*+|?()[]{}$^"))
 
 (defn- re-escape
   "Escape all special regex chars in a string."
@@ -34,10 +33,10 @@
      (-> (string/replace path "+" (URLEncoder/encode "+" encoding))
          (URLDecoder/decode encoding))))
 
-(def ^{:private true} uri-chars
+(def ^:private uri-chars
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._~:@!$&'()*+,;=/")
 
-(defmacro ^{:private true} encode-char [char encoding]
+(defmacro ^:private encode-char [char encoding]
   `(case ~char
      ~@(mapcat (fn [c] [c (str c)]) uri-chars)
      \space "%20"
