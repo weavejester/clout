@@ -74,11 +74,12 @@
 
 (deftest wildcard-paths
   (are [path uri params] (= (route-matches path (request :get uri)) params)
-    "/*"     "/foo"         {:* "foo"}
-    "/*"     "/foo.txt"     {:* "foo.txt"}
-    "/*"     "/foo/bar"     {:* "foo/bar"}
-    "/foo/*" "/foo/bar/baz" {:* "bar/baz"}
-    "/a/*/d" "/a/b/c/d"     {:* "b/c"}))
+    "/*"     "/foo"         {}
+    "/*"     "/foo.txt"     {}
+    "/*"     "/foo/bar"     {}
+    "/foo/*" "/foo/bar/baz" {}
+    "/a/*/d" "/a/b/c/d"     {}
+    "/:x/*"  "/foo/bar/baz" {:x "foo"}))
 
 (deftest compiled-routes
   (is (= (route-matches (route-compile "/foo/:id")

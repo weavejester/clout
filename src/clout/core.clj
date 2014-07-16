@@ -146,7 +146,7 @@
   (re-pattern
     (apply str
       (lex path
-        #"\*"      "(.*?)"
+        #"\*"      ".*?"
         #"^//"     "https?://"
         re-word    #(str "(" (regexs (word-group %) "[^/,;?]+") ")")
         re-literal #(re-escape (.group ^Matcher %))))))
@@ -154,7 +154,7 @@
 (defn- find-path-keys [path]
   (remove nil?
     (lex path
-      #"\*"      :*
+      #"\*"      nil
       re-word    word-group
       re-literal nil)))
 
