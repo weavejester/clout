@@ -1,6 +1,7 @@
 (ns clout.core
   "Library for parsing the Rails routes syntax."
-  (:require [clojure.string :as string])
+  (:require [clojure.string :as string]
+            [clojure.set :as set])
   (:import java.util.Map
            java.util.regex.Matcher
            [java.net URLDecoder URLEncoder]))
@@ -135,29 +136,39 @@
   [path]
   (boolean (re-matches #"(https?:)?//.*" path)))
 
+(def ^:private re-word    #":([\p{L}_][\p{L}_0-9-]*)")
+(def ^:private re-literal #"(:[^\p{L}_*]|[^:*])+")
+
+(defn- word-group [^Matcher m]
+  (keyword (.group m 1)))
+
+(defn- build-route-regex [path regexs]
+  (re-pattern
+    (apply str
+      (lex path
+        #"\*"      "(.*?)"
+        #"^//"     "https?://"
+        re-word    #(str "(" (regexs (word-group %) "[^/,;?]+") ")")
+        re-literal #(re-escape (.group ^Matcher %))))))
+
+(defn- find-path-keys [path]
+  (remove nil?
+    (lex path
+      #"\*"      :*
+      re-word    word-group
+      re-literal nil)))
+
 (defn route-compile
   "Compile a path string using the routes syntax into a uri-matcher struct."
   ([path]
-    (route-compile path {}))
+     (route-compile path {}))
   ([path regexs]
-    (let [splat   #"\*"
-          word    #":([\p{L}_][\p{L}_0-9-]*)"
-          literal #"(:[^\p{L}_*]|[^:*])+"
-          word-group #(keyword (.group ^Matcher % 1))
-          word-regex #(regexs (word-group %) "[^/,;?]+")]
-      (CompiledRoute.
-        (re-pattern
-          (apply str
-            (lex path
-              splat   "(.*?)"
-              #"^//"  "https?://"
-              word    #(str "(" (word-regex %) ")")
-              literal #(re-escape (.group ^Matcher %)))))
-        (remove nil?
-          (lex path
-            splat   :*
-            word    word-group
-            literal nil))
+     (let [path-keys (find-path-keys path)]
+       (assert (set/subset? (set (keys regexs)) (set path-keys))
+               "unused keys in regular expression map")
+       (CompiledRoute.
+        (build-route-regex path regexs)
+        (vec path-keys)
         (absolute-url? path)))))
 
 (extend-type String

@@ -119,3 +119,7 @@
     (is (not (route-matches route (request :get "/foo/bar"))))
     (is (not (route-matches route (request :get "/foo/1x"))))
     (is (route-matches route (request :get "/foo/10")))))
+
+(deftest unused-regex-keys
+  (is (thrown? AssertionError (route-compile "/:foo" {:foa #"\d+"})))
+  (is (thrown? AssertionError (route-compile "/:foo" {:foo #"\d+" :bar #".*"}))))
