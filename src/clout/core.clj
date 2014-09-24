@@ -93,9 +93,9 @@
     "If the route matches the supplied request, the matched keywords are
     returned as a map. Otherwise, nil is returned."))
 
-(defrecord CompiledRoute [re keys absolute?]
+(defrecord CompiledRoute [source re keys absolute?]
   Route
-  (route-matches [route request]
+  (route-matches [_ request]
     (let [path-info (if absolute?
                       (request-url request)
                       (path-info request))
@@ -103,7 +103,9 @@
       (if (.matches matcher)
         (assoc-keys-with-groups
           (map path-decode (re-groups* matcher))
-          keys)))))
+          keys))))
+  Object
+  (toString [_] source))
 
 ;; Compile routes
 
@@ -167,6 +169,7 @@
        (assert (set/subset? (set (keys regexs)) (set path-keys))
                "unused keys in regular expression map")
        (CompiledRoute.
+        path
         (build-route-regex path regexs)
         (vec path-keys)
         (absolute-url? path)))))
