@@ -1,4 +1,4 @@
-(defproject clout "1.2.0"
+(defproject clout "2.0.0-SNAPSHOT"
   :description "A HTTP route matching library"
   :url "https://github.com/weavejester/clout"
   :license {:name "Eclipse Public License"
