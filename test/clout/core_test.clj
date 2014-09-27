@@ -1,4 +1,4 @@
-(ns clout.test.core
+(ns clout.core-test
   (:use clojure.test
         ring.mock.request
         clout.core))
