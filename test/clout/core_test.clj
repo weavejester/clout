@@ -1,7 +1,7 @@
 (ns clout.core-test
-  (:use clojure.test
-        ring.mock.request
-        clout.core))
+  (:require [clojure.test :refer :all]
+            [ring.mock.request :refer [request]]
+            [clout.core :refer :all]))
 
 (deftest fixed-path
   (are [path] (route-matches path (request :get path))
