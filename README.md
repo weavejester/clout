@@ -24,32 +24,45 @@ generate Ring request maps.
 [2]: https://github.com/weavejester/ring-mock
 
 ```clj
-user=> (use 'ring.mock.request 'clout.core)
-nil
-user=> (route-matches "/article/:title"
-                      (request :get "/article/clojure"))
-{:title "clojure"}
-user=> (route-matches "/public/*"
-                      (request :get "/public/style/screen.css"))
-{:* "style/screen.css"}
+(require '[clout.core :as clout]
+         '[ring.mock.request :as mock])
+
+(clout/route-matches
+ "/article/:title"
+ (mock/request :get "/article/clojure"))
+
+=> {:title "clojure"}
+
+(clout/route-matches
+ "/public/*"
+ (mock/request :get "/public/style/screen.css"))
+ 
+=> {:* "style/screen.css"}
 ```
 
 Clout can also match absolute routes:
 
 ```clj
-user=> (route-matches "http://subdomain.example.com/"
-                      (request :get "http://subdomain.example.com/"))
-{}
+(clout/route-matches
+ "http://subdomain.example.com/"
+ (mock/request :get "http://subdomain.example.com/"))
+
+=> {}
 ```
 And scheme-relative routes:
 
 ```clj
-user=> (route-matches "//subdomain.example.com/"
-                      (request :get "http://subdomain.example.com/"))
-{}
-user=> (route-matches "//subdomain.example.com/"
-                      (request :get "https://subdomain.example.com/"))
-{}
+(clout/route-matches
+ "//subdomain.example.com/"
+ (mock/request :get "http://subdomain.example.com/"))
+
+=> {}
+
+(clout/route-matches
+ "//subdomain.example.com/"
+ (mock/request :get "https://subdomain.example.com/"))
+ 
+=> {}
 ```
 
 Clout supports both keywords and wildcards. Keywords (like ":title") will
@@ -59,29 +72,36 @@ anything.
 If a route does not match, nil is returned:
 
 ```clj
-user=> (route-matches "/products" (request :get "/articles"))
-nil
+(clout/route-matches "/products" (mock/request :get "/articles"))
+
+=> nil
 ```
 
 For additional performance, you can choose to pre-compile a route:
 
 ```clj
-user=> (def user-route (route-compile "/user/:id"))
-#'user/user-route
-user=> (route-matches user-route (request :get "/user/10"))
-{:id "10"}
+(def user-route
+  (clout/route-compile "/user/:id"))
+
+(clout/route-matches user-route (mock/request :get "/user/10"))
+
+=> {:id "10"}
 ```
 
 When compiling a route, you can specify a map of regular expressions to use
 for different keywords. This allows more specific routing:
 
 ```clj
-user=> (def user-route (route-compile "/user/:id" {:id #"\d+"}))
-#'user/user-route
-user=> (route-matches user-route (request :get "/user/10"))
-{:user "10"}
-user=> (route-matches user-route (request :get "/user/jsmith"))
-nil
+(def user-route
+  (clout/route-compile "/user/:id" {:id #"\d+"}))
+
+(clout/route-matches user-route (mock/request :get "/user/10"))
+
+=> {:user "10"}
+
+(clout/route-matches user-route (mock/request :get "/user/jsmith"))
+
+=> nil
 ```
 
 ## License
