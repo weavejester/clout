@@ -18,21 +18,34 @@ Add the following to your project.clj dependencies:
 
 ## Usage
 
-These following examples make use of the [ring-mock][2] library to
-generate Ring request maps.
+Require Clout in the normal way:
+
+```clj
+(require '[clout.core :as clout])
+```
+
+These following examples also make use of the [ring-mock][2] library
+to generate Ring request maps:
 
 [2]: https://github.com/weavejester/ring-mock
 
 ```clj
-(require '[clout.core :as clout]
-         '[ring.mock.request :as mock])
+(require '[ring.mock.request :as mock])
+```
 
+Routes can match by keyword:
+
+```clj
 (clout/route-matches
  "/article/:title"
  (mock/request :get "/article/clojure"))
 
 => {:title "clojure"}
+```
 
+Or with wildcards:
+
+```clj
 (clout/route-matches
  "/public/*"
  (mock/request :get "/public/style/screen.css"))
