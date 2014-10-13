@@ -60,6 +60,17 @@
     "/foo/*" "/foo/bar/baz" {:* "bar/baz"}
     "/a/*/d" "/a/b/c/d"     {:* "b/c"}))
 
+(deftest inline-regexes
+  (are [path uri params] (= (route-matches path (request :get uri)) params)
+    "/:x{\\d+}"   "/foo" nil
+    "/:x{\\d+}"   "/10"  {:x "10"}
+    "/:x{\\d{2}}" "/2"   nil
+    "/:x{\\d{2}}" "/20"  {:x "20"}
+    "/:x{\\d}/b"  "/3/b" {:x "3"}
+    "/:x{\\d}/b"  "/a/b" nil
+    "/a/:x{\\d}"  "/a/4" {:x "4"}
+    "/a/:x{\\d}"  "/a/b" nil))
+
 (deftest compiled-routes
   (is (= (route-matches (route-compile "/foo/:id") (request :get "/foo/bar"))
          {:id "bar"})))

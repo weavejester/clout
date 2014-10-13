@@ -57,23 +57,40 @@
   (insta/parser
    "route    = (scheme / part) part*
     scheme   = #'(https?:)?//'
-    <part>   = literal | param | wildcard
-    literal  = #'(:[^\\p{L}_*]|[^:*])+'
-    param    = <':'> #'([\\p{L}_][\\p{L}_0-9-]*)'
-    wildcard = '*'"))
+
+    <part>   = literal | wildcard | param
+    literal  = #'(:[^\\p{L}_*{}]|[^:*{}])+'
+    wildcard = '*'
+
+    param    = key pattern?
+    key      = <':'> #'([\\p{L}_][\\p{L}_0-9-]*)'
+    pattern  = '{' (#'[^{}]+' | pattern)* '}'"))
+
+(defn- find-route-key [form]
+  (case (first form)
+    :wildcard :*
+    :param    (-> form second second keyword)))
 
 (defn- route-keys [parse-tree]
   (->> (rest parse-tree)
        (filter (comp #{:param :wildcard} first))
-       (map (comp keyword second))))
+       (map find-route-key)))
+
+(defn- trim-pattern [pattern]
+  (some-> pattern (subs 1 (dec (count pattern)))))
+
+(defn- param-regex [regexs key & [pattern]]
+  (str "(" (or (trim-pattern pattern) (regexs key) "[^/,;?]+") ")"))
 
 (defn- route-regex [parse-tree regexs]
   (insta/transform
    {:route    (comp re-pattern str)
     :scheme   #(if (= % "//") "https?://" %)
     :literal  re-escape
-    :param    #(str "(" (regexs (keyword %) "[^/,;?]+") ")")
-    :wildcard (constantly "(.*?)")}
+    :wildcard (constantly "(.*?)")
+    :param    (partial param-regex regexs)
+    :key      keyword
+    :pattern  str}
    parse-tree))
 
 (defn- absolute-url? [path]
