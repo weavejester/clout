@@ -1,4 +1,6 @@
 (ns clout.core-test
+  (:import [clojure.lang ExceptionInfo]
+           [java.util.regex PatternSyntaxException])
   (:require [clojure.test :refer :all]
             [ring.mock.request :refer [request]]
             [clout.core :refer :all]))
@@ -113,3 +115,8 @@
 (deftest unused-regex-keys
   (is (thrown? AssertionError (route-compile "/:foo" {:foa #"\d+"})))
   (is (thrown? AssertionError (route-compile "/:foo" {:foo #"\d+" :bar #".*"}))))
+
+(deftest invalid-inline-patterns
+  (is (thrown? ExceptionInfo (route-compile "/:foo{")))
+  (is (thrown? ExceptionInfo (route-compile "/:foo{\\d{2}")))
+  (is (thrown? PatternSyntaxException (route-compile "/:foo{[a-z}"))))

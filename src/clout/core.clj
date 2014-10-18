@@ -53,7 +53,7 @@
   Object
   (toString [_] source))
 
-(def ^:private route-parse
+(def ^:private route-parser
   (insta/parser
    "route    = (scheme / part) part*
     scheme   = #'(https?:)?//'
@@ -65,6 +65,12 @@
     param    = key pattern?
     key      = <':'> #'([\\p{L}_][\\p{L}_0-9-]*)'
     pattern  = '{' (#'[^{}]+' | pattern)* '}'"))
+
+(defn- parse [parser text]
+  (let [result (insta/parse parser text)]
+    (if (insta/failure? result)
+      (throw (ex-info "Parse error in route string" {:failure result}))
+      result)))
 
 (defn- find-route-key [form]
   (case (first form)
@@ -101,7 +107,7 @@
   ([path]
      (route-compile path {}))
   ([path regexs]
-     (let [ast (route-parse path)
+     (let [ast (parse route-parser path)
            ks  (route-keys ast)]
        (assert (set/subset? (set (keys regexs)) (set ks))
                "unused keys in regular expression map")
