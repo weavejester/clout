@@ -58,13 +58,14 @@
    "route    = (scheme / part) part*
     scheme   = #'(https?:)?//'
 
-    <part>   = literal | wildcard | param
-    literal  = #'(:[^\\p{L}_*{}]|[^:*{}])+'
+    <part>   = literal | escaped | wildcard | param
+    literal  = #'(:[^\\p{L}_*{}\\\\]|[^:*{}\\\\])+'
+    escaped  = #'\\\\.'
     wildcard = '*'
 
     param    = key pattern?
     key      = <':'> #'([\\p{L}_][\\p{L}_0-9-]*)'
-    pattern  = '{' (#'[^{}]+' | pattern)* '}'"))
+    pattern  = '{' (#'(?:[^{}\\\\]|\\\\.)+' | pattern)* '}'"))
 
 (defn- parse [parser text]
   (let [result (insta/parse parser text)]
@@ -93,6 +94,7 @@
    {:route    (comp re-pattern str)
     :scheme   #(if (= % "//") "https?://" %)
     :literal  re-escape
+    :escaped  #(re-escape (subs % 1))
     :wildcard (constantly "(.*?)")
     :param    (partial param-regex regexs)
     :key      keyword

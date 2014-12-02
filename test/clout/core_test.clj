@@ -62,6 +62,11 @@
     "/foo/*" "/foo/bar/baz" {:* "bar/baz"}
     "/a/*/d" "/a/b/c/d"     {:* "b/c"}))
 
+(deftest escaped-chars
+  (are [path uri params] (= (route-matches path (request :get uri)) params)
+    "/\\:foo" "/foo"  nil
+    "/\\:foo" "/:foo" {}))
+
 (deftest inline-regexes
   (are [path uri params] (= (route-matches path (request :get uri)) params)
     "/:x{\\d+}"   "/foo" nil
