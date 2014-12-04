@@ -117,6 +117,17 @@ for different keywords. This allows more specific routing:
 => nil
 ```
 
+You can also specify regular expressions inline in braces after the
+keyword:
+
+```clj
+(def user-route
+  (clout/route-compile "/user/:id{\\d+}"))
+```
+
+Note that regular expression escape sequences (like `\d`) need to be
+double-escaped when placed inline in a string.
+
 ## License
 
 Copyright © 2014 James Reeves
