@@ -65,7 +65,8 @@
 
     param    = key pattern?
     key      = <':'> #'([\\p{L}_][\\p{L}_0-9-]*)'
-    pattern  = '{' (#'(?:[^{}\\\\]|\\\\.)+' | pattern)* '}'"))
+    pattern  = '{' (#'(?:[^{}\\\\]|\\\\.)+' | pattern)* '}'"
+   :no-slurp true))
 
 (defn- parse [parser text]
   (let [result (insta/parse parser text)]
