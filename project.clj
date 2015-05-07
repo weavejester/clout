@@ -10,4 +10,4 @@
          :dependencies [[ring/ring-mock "0.2.0"]
                         [criterium "0.4.2"]]}
    :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
-   :1.7 {:dependencies [[org.clojure/clojure "1.7.0-alpha6"]]}})
+   :1.7 {:dependencies [[org.clojure/clojure "1.7.0-beta2"]]}})
