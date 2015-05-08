@@ -24,10 +24,10 @@ Require Clout in the normal way:
 (require '[clout.core :as clout])
 ```
 
-These following examples also make use of the [ring-mock][2] library
+These following examples also make use of the [Ring-Mock][2] library
 to generate Ring request maps:
 
-[2]: https://github.com/weavejester/ring-mock
+[2]: https://github.com/ring-clojure/ring-mock
 
 ```clj
 (require '[ring.mock.request :as mock])
