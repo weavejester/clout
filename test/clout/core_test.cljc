@@ -1,9 +1,31 @@
 (ns clout.core-test
-  (:import [clojure.lang ExceptionInfo]
-           [java.util.regex PatternSyntaxException])
-  (:require [clojure.test :refer :all]
-            [ring.mock.request :refer [request]]
-            [clout.core :refer :all]))
+  (:import #?@(:clj [[clojure.lang ExceptionInfo]
+                     [java.util.regex PatternSyntaxException]]
+               :cljs [[goog Uri]]))
+  (:require #?@(:clj [[clojure.test :refer :all]
+                      [ring.mock.request :refer [request]]]
+               :cljs [[cljs.test :refer-macros [is are deftest testing use-fixtures]]])
+            [clout.core :refer [route-matches route-compile]]))
+
+#?(:cljs
+   (defn request
+     "Naive implementation of the Ring Mock Request in ClojureScript."
+     [method uri]
+     (let [uri    (Uri. uri)
+           host   (if-not (empty? (.getDomain uri)) (.getDomain uri) "localhost")
+           port   (.getPort uri)
+           scheme (.getScheme uri)
+           path   (js/encodeURI (.getPath uri))]
+       {:server-port    (or port 80)
+        :server-name    host
+        :remote-addr    "localhost"
+        :uri            (if (clojure.string/blank? path) "/" path)
+        :query-string   (.getQuery uri)
+        :scheme         (if-not (empty? scheme) (keyword scheme) :http)
+        :request-method method
+        :headers        {"host" (if port
+                                  (str host ":" port)
+                                  host)}})))
 
 (deftest fixed-path
   (are [path] (route-matches path (request :get path))
@@ -112,16 +134,19 @@
                                 (assoc :path-info "/bar")))))
 
 (deftest custom-matches
-  (let [route (route-compile "/foo/:bar" {:bar #"\d+"})]
+  (let [route (route-compile "/foo/:bar" {:bar #?(:clj #"\d+" :cljs "\\d+")})]
     (is (not (route-matches route (request :get "/foo/bar"))))
     (is (not (route-matches route (request :get "/foo/1x"))))
     (is (route-matches route (request :get "/foo/10")))))
 
 (deftest unused-regex-keys
-  (is (thrown? AssertionError (route-compile "/:foo" {:foa #"\d+"})))
-  (is (thrown? AssertionError (route-compile "/:foo" {:foo #"\d+" :bar #".*"}))))
+  (is (thrown? #?(:clj AssertionError :cljs js/Error)
+               (route-compile "/:foo" {:foa #"\d+"})))
+  (is (thrown? #?(:clj AssertionError :cljs js/Error)
+               (route-compile "/:foo" {:foo #"\d+" :bar #".*"}))))
 
 (deftest invalid-inline-patterns
   (is (thrown? ExceptionInfo (route-compile "/:foo{")))
   (is (thrown? ExceptionInfo (route-compile "/:foo{\\d{2}")))
-  (is (thrown? PatternSyntaxException (route-compile "/:foo{[a-z}"))))
+  (is (thrown? #?(:clj PatternSyntaxException :cljs js/Error) 
+               (route-compile "/:foo{[a-z}"))))
