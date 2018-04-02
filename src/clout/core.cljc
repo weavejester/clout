@@ -2,24 +2,36 @@
   "A small language for routing."
   (:require [clojure.string :as string]
             [clojure.set :as set]
-            [instaparse.core :as insta]))
+            [instaparse.core :as insta]
+            #?(:cljs [clout.internal.regex :refer [re-unicode-letter]])))
 
 (def ^:private re-chars (set "\\.*+|?()[]{}$^"))
+#?(:cljs (def ^:private re-char-escapes
+           (into {} (for [c re-chars] [c (str "\\" c)]))))
 
 (defn- re-escape [s]
-  (string/escape s #(if (re-chars %) (str \\ %))))
+  (string/escape s #?(:clj #(if (re-chars %) (str \\ %)) :cljs re-char-escapes)))
 
-(defn- re-groups* [^java.util.regex.Matcher matcher]
-  (for [i (range (.groupCount matcher))]
-    (.group matcher (int (inc i)))))
+(defn- re-match-groups [re s]
+  #?(:clj
+     (let [matcher (re-matcher re s)]
+       (when (.matches matcher)
+         (for [i (range (.groupCount matcher))]
+           (.group matcher (int (inc i))))))
+     :cljs
+     (if (string? s)
+       (let [matches (.exec re s)]
+         (when (= (first matches) s)
+           (rest matches)))
+       (throw (js/TypeError. "re-match-groups must match against string.")))))
 
 (defn- assoc-conj [m k v]
   (assoc m k
-    (if-let [cur (get m k)]
-      (if (vector? cur)
-        (conj cur v)
-        [cur v])
-      v)))
+           (if-let [cur (get m k)]
+             (if (vector? cur)
+               (conj cur v)
+               [cur v])
+             v)))
 
 (defn- assoc-keys-with-groups [groups keys]
   (reduce (fn [m [k v]] (assoc-conj m k v))
@@ -46,26 +58,26 @@
   (route-matches [_ request]
     (let [path-info (if absolute?
                       (request-url request)
-                      (path-info request))
-          matcher   (re-matcher re path-info)]
-      (if (.matches matcher)
-        (assoc-keys-with-groups (re-groups* matcher) keys))))
-  Object
-  (toString [_] source))
+                      (path-info request))]
+      (let [groups (re-match-groups re path-info)]
+        (when groups
+          (assoc-keys-with-groups groups keys)))))
+  #?@(:clj [Object
+            (toString [_] source)]))
 
 (def ^:private route-parser
   (insta/parser
-   "route    = (scheme / part) part*
-    scheme   = #'(https?:)?//'
-
-    <part>   = literal | escaped | wildcard | param
-    literal  = #'(:[^\\p{L}_*{}\\\\]|[^:*{}\\\\])+'
-    escaped  = #'\\\\.'
-    wildcard = '*'
-
-    param    = key pattern?
-    key      = <':'> #'([\\p{L}_][\\p{L}_0-9-]*)'
-    pattern  = '{' (#'(?:[^{}\\\\]|\\\\.)+' | pattern)* '}'"
+   (let [letter #?(:clj "\\p{L}" :cljs re-unicode-letter)]
+     (str
+      "route    = (scheme / part) part*
+       scheme   = #'(https?:)?//'
+       <part>   = literal | escaped | wildcard | param
+       literal  = #'(:[^" letter "_*{}\\\\]|[^:*{}\\\\])+'
+       escaped  = #'\\\\.'
+       wildcard = '*'
+       param    = key pattern?
+       key      = <':'> #'([" letter "_][" letter "_0-9-]*)'
+       pattern  = '{' (#'(?:[^{}\\\\]|\\\\.)+' | pattern)* '}'"))
    :no-slurp true))
 
 (defn- parse [parser text]
@@ -92,7 +104,7 @@
 
 (defn- route-regex [parse-tree regexs]
   (insta/transform
-   {:route    (comp re-pattern str)
+   {:route    (comp re-pattern #?(:cljs #(str "^" % "$")) str)
     :scheme   #(if (= % "//") "https?://" %)
     :literal  re-escape
     :escaped  #(re-escape (subs % 1))
@@ -108,19 +120,19 @@
 (defn route-compile
   "Compile a route string for more efficient route matching."
   ([path]
-     (route-compile path {}))
+   (route-compile path {}))
   ([path regexs]
-     (let [ast (parse route-parser path)
-           ks  (route-keys ast)]
-       (assert (set/subset? (set (keys regexs)) (set ks))
-               "unused keys in regular expression map")
-       (CompiledRoute.
-        path
-        (route-regex ast regexs)
-        (vec ks)
-        (absolute-url? path)))))
+   (let [ast (parse route-parser path)
+         ks  (route-keys ast)]
+     (assert (set/subset? (set (keys regexs)) (set ks))
+             "unused keys in regular expression map")
+     (CompiledRoute.
+      path
+      (route-regex ast regexs)
+      (vec ks)
+      (absolute-url? path)))))
 
-(extend-type String
+(extend-type #?(:clj String :cljs string)
   Route
   (route-matches [route request]
     (route-matches (route-compile route) request)))
