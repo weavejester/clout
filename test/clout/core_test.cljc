@@ -134,7 +134,7 @@
                                 (assoc :path-info "/bar")))))
 
 (deftest custom-matches
-  (let [route (route-compile "/foo/:bar" {:bar #?(:clj #"\d+" :cljs "\\d+")})]
+  (let [route (route-compile "/foo/:bar" {:bar #"\d+"})]
     (is (not (route-matches route (request :get "/foo/bar"))))
     (is (not (route-matches route (request :get "/foo/1x"))))
     (is (route-matches route (request :get "/foo/10")))))

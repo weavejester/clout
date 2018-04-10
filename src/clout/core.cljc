@@ -100,7 +100,11 @@
   (some-> pattern (subs 1 (dec (count pattern)))))
 
 (defn- param-regex [regexs key & [pattern]]
-  (str "(" (or (trim-pattern pattern) (regexs key) "[^/,;?]+") ")"))
+  (let [pattern (or (trim-pattern pattern) (regexs key) "[^/,;?]+")]
+    (str "(" #?(:clj  pattern
+                :cljs (if (instance? js/RegExp pattern)
+                        (.-source pattern)
+                        pattern)) ")")))
 
 (defn- route-regex [parse-tree regexs]
   (insta/transform
