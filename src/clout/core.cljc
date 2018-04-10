@@ -62,8 +62,8 @@
       (let [groups (re-match-groups re path-info)]
         (when groups
           (assoc-keys-with-groups groups keys)))))
-  #?@(:clj [Object
-            (toString [_] source)]))
+  Object
+  (toString [_] source))
 
 (def ^:private route-parser
   (insta/parser

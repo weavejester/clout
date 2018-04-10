@@ -150,3 +150,10 @@
   (is (thrown? ExceptionInfo (route-compile "/:foo{\\d{2}")))
   (is (thrown? #?(:clj PatternSyntaxException :cljs js/Error) 
                (route-compile "/:foo{[a-z}"))))
+
+(deftest to-string-method
+  (are [path regexs] (= (str (route-compile path regexs)) path)
+    "/foo"            {}
+    "/foo/:bar"       {}
+    "/foo/:bar"       {:bar #"\d+"}
+    "/foo/:bar{\\d+}" {}))
