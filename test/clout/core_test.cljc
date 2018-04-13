@@ -134,7 +134,7 @@
                                 (assoc :path-info "/bar")))))
 
 (deftest custom-matches
-  (let [route (route-compile "/foo/:bar" {:bar #?(:clj #"\d+" :cljs "\\d+")})]
+  (let [route (route-compile "/foo/:bar" {:bar #"\d+"})]
     (is (not (route-matches route (request :get "/foo/bar"))))
     (is (not (route-matches route (request :get "/foo/1x"))))
     (is (route-matches route (request :get "/foo/10")))))
@@ -150,3 +150,10 @@
   (is (thrown? ExceptionInfo (route-compile "/:foo{\\d{2}")))
   (is (thrown? #?(:clj PatternSyntaxException :cljs js/Error) 
                (route-compile "/:foo{[a-z}"))))
+
+(deftest to-string-method
+  (are [path regexs] (= (str (route-compile path regexs)) path)
+    "/foo"            {}
+    "/foo/:bar"       {}
+    "/foo/:bar"       {:bar #"\d+"}
+    "/foo/:bar{\\d+}" {}))

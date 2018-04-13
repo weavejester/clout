@@ -62,8 +62,8 @@
       (let [groups (re-match-groups re path-info)]
         (when groups
           (assoc-keys-with-groups groups keys)))))
-  #?@(:clj [Object
-            (toString [_] source)]))
+  Object
+  (toString [_] source))
 
 (def ^:private route-parser
   (insta/parser
@@ -100,7 +100,11 @@
   (some-> pattern (subs 1 (dec (count pattern)))))
 
 (defn- param-regex [regexs key & [pattern]]
-  (str "(" (or (trim-pattern pattern) (regexs key) "[^/,;?]+") ")"))
+  (let [pattern (or (trim-pattern pattern) (regexs key) "[^/,;?]+")]
+    (str "(" #?(:clj  pattern
+                :cljs (if (instance? js/RegExp pattern)
+                        (.-source pattern)
+                        pattern)) ")")))
 
 (defn- route-regex [parse-tree regexs]
   (insta/transform
